@@ -1,9 +1,12 @@
 name: Update Documentation
-# Test update
+
 on:
   push:
     paths:
-      - "README.md"   # спрацьовує лише коли змінюється README.md
+      - "README.md"
+
+permissions:
+  contents: write   # даємо правa комітити з workflow
 
 jobs:
   generate_docs:
@@ -11,7 +14,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true   # залишити GITHUB_TOKEN для push (дефолт, але вкажемо явно)
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -19,17 +24,19 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: |
-          pip install markdown
+        run: pip install markdown
 
       - name: Generate HTML documentation
-        run: |
-          python generate_docs.py
+        run: python generate_docs.py
 
-      - name: Commit and push generated docs
+      - name: Commit and push generated docs (only if changed)
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add docs/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
           git commit -m "Auto-update HTML documentation"
           git push
